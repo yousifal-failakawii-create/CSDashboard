@@ -1,22 +1,15 @@
 import { google, type sheets_v4 } from 'googleapis'
 
-/**
- * Creates an authenticated Google Sheets client for server-side use.
- *
- * Do not import this module from browser-rendered React components. Configure
- * the required environment variables only in a trusted server or serverless
- * runtime, never in a VITE_ prefixed client-side variable.
- */
 export function createGoogleSheetsClient(): sheets_v4.Sheets {
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY)?.replace(
     /\\n/g,
     '\n'
   )
 
   if (!clientEmail || !privateKey) {
     throw new Error(
-      'GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY must be configured.'
+      'GOOGLE_CLIENT_EMAIL (or GOOGLE_SERVICE_ACCOUNT_EMAIL) and GOOGLE_PRIVATE_KEY must be configured.'
     )
   }
 
@@ -31,12 +24,9 @@ export function createGoogleSheetsClient(): sheets_v4.Sheets {
   return google.sheets({ version: 'v4', auth })
 }
 
-/**
- * Reads values from a range in a Google Spreadsheet using service-account credentials.
- */
 export async function getSheetValues(
-  spreadsheetId: string,
-  range: string
+  spreadsheetId: string = process.env.GOOGLE_SHEET_ID || '',
+  range: string = 'Orders!A1:Z1000'
 ): Promise<unknown[][]> {
   const sheets = createGoogleSheetsClient()
   const response = await sheets.spreadsheets.values.get({
