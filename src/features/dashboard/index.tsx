@@ -18,7 +18,6 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
-import { getSheetValues } from '@/api/sheets'
 
 export function Dashboard() {
   const [ordersData, setOrdersData] = useState<unknown[][]>([])
@@ -28,8 +27,12 @@ export function Dashboard() {
     async function fetchOrders() {
       try {
         setIsLoading(true)
-        const rows = await getSheetValues()
-        setOrdersData(rows)
+        // استدعاء الـ API Endpoint الخاص بالسيرفر بدلاً من الاتصال المباشر من الميزان (Client)
+        const res = await fetch('/api/orders')
+        const data = await res.json()
+        if (data.rows) {
+          setOrdersData(data.rows)
+        }
       } catch (error) {
         console.error('Error fetching Google Sheets data:', error)
       } finally {
