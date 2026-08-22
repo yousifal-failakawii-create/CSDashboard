@@ -19,32 +19,43 @@ import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
+// ضع رابط الـ CSV المنشور هنا
+const SHEET_CSV_URL = 'ضع_رابط_الـ_CSV_هنا'
+
 export function Dashboard() {
-  const [ordersData, setOrdersData] = useState<unknown[][]>([])
+  const [ordersData, setOrdersData] = useState<string[][]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
     async function fetchOrders() {
       try {
         setIsLoading(true)
-        // استدعاء الـ API Endpoint الخاص بالسيرفر بدلاً من الاتصال المباشر من الميزان (Client)
-        const res = await fetch('/api/orders')
-        const data = await res.json()
-        if (data.rows) {
-          setOrdersData(data.rows)
-        }
+        const res = await fetch(SHEET_CSV_URL)
+        const text = await res.text()
+        
+        // تحويل نص الـ CSV إلى صفوف وأعمدة
+        const rows = text
+          .split('\n')
+          .map((row) => row.split(',').map((cell) => cell.replace(/^"(.*)"$/, '$1').trim()))
+          .filter((row) => row.some((cell) => cell.length > 0))
+
+        setOrdersData(rows)
       } catch (error) {
-        console.error('Error fetching Google Sheets data:', error)
+        console.error('Error fetching CSV from Google Sheets:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchOrders()
+    if (SHEET_CSV_URL && !SHEET_CSV_URL.includes('https://docs.google.com/spreadsheets/d/e/2PACX-1vSYrPSKhtPwWEAT4583uZb5OSvUgPlHIqAz0IFIoO95FQJGCvWVTGp0Y6FJr91kWg4WfeSqvADNT1pd/pubhtml?gid=1457908319&single=true')) {
+      fetchOrders()
+    } else {
+      setIsLoading(false)
+    }
   }, [])
 
-  // حساب إجمالي الطلبات (تجاوز صف العناوين الأول إن وجد)
-  const totalOrders = ordersData.length > 1 ? ordersData.length - 1 : ordersData.length
+  // حساب إجمالي الطلبات (تجاوز صف الصف الأول الخاص بالعناوين)
+  const totalOrders = ordersData.length > 1 ? ordersData.length - 1 : 0
 
   return (
     <>
