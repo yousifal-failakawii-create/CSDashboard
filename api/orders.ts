@@ -8,7 +8,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID
 
     if (!clientEmail || !privateKey || !spreadsheetId) {
-      return res.status(500).json({ error: 'Missing environment variables' })
+      return res.status(500).json({ 
+        error: 'Missing env vars', 
+        details: { hasEmail: !!clientEmail, hasKey: !!privateKey, hasSheetId: !!spreadsheetId } 
+      })
     }
 
     const auth = new google.auth.GoogleAuth({
@@ -17,13 +20,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     const sheets = google.sheets({ version: 'v4', auth })
+    
+    // القراءة من التاب الأول مباشرة بدون اسم محدد
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Orders!A1:E1000',
+      range: 'A1:E1000',
     })
 
     return res.status(200).json({ rows: response.data.values || [] })
   } catch (error: any) {
-    return res.status(500).json({ error: error.message })
+    return res.status(500).json({ error: error.message || 'Failed to fetch data' })
   }
 }
