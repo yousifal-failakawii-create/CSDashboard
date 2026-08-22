@@ -19,8 +19,8 @@ import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
-// ضع رابط الـ CSV المنشور هنا
-const SHEET_CSV_URL = 'ضع_رابط_الـ_CSV_هنا'
+// ضع رابط الـ CSV المباشر لتاب Orders هنا
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSYrPSKhtPwWEAT4583uZb5OSvUgPlHIqAz0IFIoO95FQJGCvWVTGp0Y6FJr91kWg4WfeSqvADNT1pd/pub?output=csv'
 
 export function Dashboard() {
   const [ordersData, setOrdersData] = useState<string[][]>([])
@@ -33,13 +33,17 @@ export function Dashboard() {
         const res = await fetch(SHEET_CSV_URL)
         const text = await res.text()
         
-        // تحويل نص الـ CSV إلى صفوف وأعمدة
-        const rows = text
-          .split('\n')
-          .map((row) => row.split(',').map((cell) => cell.replace(/^"(.*)"$/, '$1').trim()))
-          .filter((row) => row.some((cell) => cell.length > 0))
+        // التعامل مع الفواصل والأسطر بشكل صحيح للـ CSV
+        const lines = text.split(/\r?\n/)
+        const validRows = lines
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0)
 
-        setOrdersData(rows)
+        const parsedData = validRows.map((line) =>
+          line.split(',').map((cell) => cell.replace(/^"(.*)"$/, '$1').trim())
+        )
+
+        setOrdersData(parsedData)
       } catch (error) {
         console.error('Error fetching CSV from Google Sheets:', error)
       } finally {
@@ -47,14 +51,14 @@ export function Dashboard() {
       }
     }
 
-    if (SHEET_CSV_URL && !SHEET_CSV_URL.includes('https://docs.google.com/spreadsheets/d/e/2PACX-1vSYrPSKhtPwWEAT4583uZb5OSvUgPlHIqAz0IFIoO95FQJGCvWVTGp0Y6FJr91kWg4WfeSqvADNT1pd/pubhtml?gid=1457908319&single=true')) {
+    if (SHEET_CSV_URL && !SHEET_CSV_URL.includes('ضع_رابط')) {
       fetchOrders()
     } else {
       setIsLoading(false)
     }
   }, [])
 
-  // حساب إجمالي الطلبات (تجاوز صف الصف الأول الخاص بالعناوين)
+  // خصم الصف الأول الخاص بعناوين الأعمدة (Header Row)
   const totalOrders = ordersData.length > 1 ? ordersData.length - 1 : 0
 
   return (
